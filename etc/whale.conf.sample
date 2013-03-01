@@ -1,0 +1,54 @@
+[WHALE]
+experiment=CMS
+initscript=/etc/whale/whaleinit.py
+
+[SRMUtils]
+srmcommand=/opt/d-cache/srm/sbin/srm
+srmcp=/opt/d-cache/srm/bin/srmcp -2 -retry_num=0 -streams_num=1
+
+[GridMapDir]
+gridmapdir=/etc/grid-security/gridmapdir/
+
+[DCache]
+adminhost=my-dcache.admin.host
+dbhost=cmsrm-dcache
+dbuser=dbuser
+user=adminuser
+
+[WhaleDCacheDBConnector]
+db=my-dcache.db.host
+
+[DAS]
+DASHost=https://cmsweb.cern.ch
+
+[LSF]
+;cachetime is the number of seconds to consider lsf cached information valid
+cachetime=60
+;only consider queue with queufilter as substring
+queuefilter=cms
+
+[INFN]
+server=https://mon-it.cnaf.infn.it
+path=/nagios/cgi-bin/
+auth=cert ; can be basic (username/passwd) cert (ssl cert) none (open)
+userkey=/path/to/userkey.pem
+usercert=/path/to/usercert.pem
+cachetime=300 
+
+[NagiosCMS]
+server=https://sam-cms-prod.cern.ch
+path=/nagios/cgi-bin/
+auth=cert ; can be basic (username/passwd) cert (ssl cert) none (open)
+userkey=/path/to/userkey.pem
+usercert=/path/to/usercert.pem
+hostfilter=cmsrm
+cachetime=300 
+
+[T2]
+server=http://t2-mon02.roma1.infn.it
+path=/nagios/cgi-bin/
+auth=basic ; can be basic (username/passwd) cert (ssl cert) none (open)
+username=username
+password=password
+realm=Nagios Access
+cachetime=300
