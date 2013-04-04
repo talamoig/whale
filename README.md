@@ -1,6 +1,8 @@
 whale
 =====
+
 Introduction
+===
 WHALE: A management tool for Tier-2 LCG Sites
 
 The LCG (Worldwide LHC Computing Grid) is a grid-based hierarchical
@@ -41,8 +43,7 @@ activities at a given site. For this reason it also provides a
 tailored plugin to perform advanced searches in the activity log.
 
 
-
-=====
 Usage
+===
 
 From command line: lcgwhale.py
