@@ -5,7 +5,7 @@ setup(name='whale',
       description='WHALE: A management tool for Tier-2 LCG Sites',
       author='Ivano Talamo',
       author_email='ivano.talamo@gmail.com',
-      url='http://code.google.com/p/lcg-whale/',
+      url='https://github.com/talamoig/whale',
       packages=find_packages(),
       scripts=['tools/lcgwhale.py']
       )
