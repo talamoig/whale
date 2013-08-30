@@ -30,8 +30,9 @@ class Plugin(object):
         self.name=name
 
     def getName(self):
-        if self.Name==None:
+        if self.name==None:
             return self.__class__.__name__
+        return self.name
     
     def setDescription(self,descr):
         '''
@@ -46,8 +47,9 @@ class Plugin(object):
     def getDescription(self):
         '''
         Returns the human-readable plugin description.
-        '''
+        '''        
         return self.descr
+        
 
     def getItem(self,item):
         '''
@@ -74,7 +76,11 @@ class Plugin(object):
         if not self.configurable.hasSection(section):
             raise PluginException("No section %s found in configuration file %s"%(section, configfile))        
         descr=self.getItem("description")
+        if descr!=None:
+            self.setDescription(descr)
         name=self.getItem("name")
+        if name!=None:
+            self.setName(name)
         
 #    def flatten(self,x):
 #        if isinstance(x, collections.Iterable):

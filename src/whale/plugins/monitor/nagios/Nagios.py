@@ -91,9 +91,9 @@ class Nagios(Plugin):
                     del(self.allinfo[k])
         return self.allinfo
 
-    def NagiosService2NagiosStatus(self,NagiosService,NagiosHost):
+    def NagiosService2NagiosStatus(self,NagiosService,Host):
         try:            
-            return self.getAllInfo()[NagiosHost][NagiosService]
+            return self.getAllInfo()[Host][NagiosService]
         except Exception:
             return None
         

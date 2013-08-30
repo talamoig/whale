@@ -6,11 +6,12 @@ Created on Feb 27, 2012
 
 ## https://cmsweb.cern.ch/phedex/datasvc/doc
 
+from whale.plugins.Plugin import Plugin
 from whale.utils.JsonUtils import JSonUtils
 import urllib
 import time
 
-class PhEDEx(object):
+class PhEDEx(Plugin):
     '''
     classdocs
     '''
@@ -115,10 +116,10 @@ class PhEDEx(object):
             None    
      
      
-    def PhedexNode2TransferRequest(self,PhedexNode):
+    def PhedexNode2TransferRequest(self,PhedexNode,approval="approved"):
         requests=self.basicQuery("requestlist",{"node":PhedexNode})['request']
+        requests=map()
         return [r["id"] for r in requests]
-##        return ["https://cmsweb.cern.ch/phedex/%s/Request::View?request=%s"%(self.db,r["id"]) for r in requests]
 
     def Dataset2TransferRequest(self,dataset,PhedexNode=None):
         res=self.basicQuery("requestlist",{"dataset":dataset})
@@ -147,12 +148,13 @@ class PhEDEx(object):
         type=res['request'][0]['type']
         dataset="\n".join(self.TransferRequest2Dataset(requestid))
         approves=[]
-        ret="%s %s requested by %s on %s"%(dataset,type,requestor,time.strftime("%d %b %Y", time.localtime(float(requestdate))))
+        ret="Dataset:%s\nOperation:%s\nRequestor:%s\nDate:%s\n"%(dataset,type,requestor,time.strftime("%d %b %Y", time.localtime(float(requestdate))))
+    
         for n in res['request'][0]['node']:
             site=n['name']
             by=n['decided_by']
             action=n['decision']
-            ret+="\n@%s[%s by %s]"%(site,action,by)
+            ret+="%s at %s by %s"%(action,site,by)
         return ret                
     
     def PhedexNode2StorageElement(self,PhedexNode):

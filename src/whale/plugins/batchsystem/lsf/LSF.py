@@ -108,13 +108,13 @@ class LSF(BatchSystem):
         return map(lambda x: self.status[x],set(map(lambda x: x[2],self.jobs())))
 
     def _2User(self):
-        return set(map(lambda x: x[1],self.jobs()))
+        return list(set(map(lambda x: x[1],self.jobs())))
 
     def _2Queue(self):
-        return set(map(lambda x: x[19][1],self.jobs()))
+        return list(set(map(lambda x: x[19][1],self.jobs())))
 
     def _2SubmissionNode(self):
-        return set(map(lambda x: x[16],self.jobs()))    
+        return list(set(map(lambda x: x[16],self.jobs())))
 
     def _2RunningNode(self):
         nodes=[]
@@ -123,7 +123,7 @@ class LSF(BatchSystem):
                 nodes.append(x[17][0][0])
             except Exception:
                 None
-        return set(nodes)
+        return list(set(nodes))
 
     def JobIdFromJob(self,Job):
         return Job[0]

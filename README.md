@@ -1,8 +1,8 @@
 whale
-=====
+===
 
 Introduction
-===
+======
 WHALE: A management tool for Tier-2 LCG Sites
 
 The LCG (Worldwide LHC Computing Grid) is a grid-based hierarchical
@@ -44,6 +44,24 @@ tailored plugin to perform advanced searches in the activity log.
 
 
 Usage
-===
+======
 
-From command line: lcgwhale.py
+From command line: lcgwhale.py --help
+
+From python shell:
+[root@cmsrm-ui02 ~]# python2.6
+Python 2.6.5 (r265:79063, Feb 28 2011, 21:55:45)
+[GCC 4.1.2 20080704 (Red Hat 4.1.2-50)] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from tools.lcgwhale import *
+host='cmsrm-dcache' dbname='chimera' user='whale'
+host='cmsrm-dcache' dbname='dcache' user='whale'
+Adding <whale.plugins.wlcg.cms.transfersystem.PhEDEx.PhEDEx object at 0x17900250>
+Adding <whale.plugins.storagesystem.dcache.DCache.DCache object at 0x179002d0>
+Adding <whale.plugins.wlcg.cms.datacatalogue.DAS.DAS object at 0x17900590>
+Adding <whale.plugins.wlcg.cms.dashboard.Dashboard.Dashboard object at 0x1790c090>
+Adding <whale.plugins.batchsystem.lsf.LSF.LSF object at 0x179005d0>
+Adding <whale.plugins.wlcg.GridMapDir.GridMapDir object at 0x17900790>
+Adding <whale.plugins.monitor.nagios.Nagios.Nagios object at 0x17900950>
+Adding <whale.plugins.monitor.nagios.Nagios.Nagios object at 0x17900b10>
+Adding <whale.plugins.monitor.nagios.Nagios.Nagios object at 0x17900cd0>

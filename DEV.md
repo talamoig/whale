@@ -23,6 +23,9 @@ of the next one. The first is a generator.
 A metod is a plugin if its name is in the form START2END. It is a
 generator if its name is _2END.
 
+A generator of type Type is indicated with *Type.
+A converter from StartType to EndType is indicated with StartType->EndType.
+
 Whale should be made of:
 -a language (describing possible conversion of information)
 -an orchestrator, that takes care of connecting different plugins and

@@ -32,6 +32,12 @@ class Meta(Plugin):
     '''
     This class provides a way to easily and transparently connect converters and generators
     of different plugins.
+    The most important method is convert.
+    convert is capable of chaining conversion method of different plugins to realize complex conversions.
+    The result of a convert("sourceType","targetType","sourceElementList")
+    is a list of elements of target type.
+    Furthermore, after a conversion, the variable last contains all the steps of the conversion and can be used
+    to obtain details about it.    
     '''
 
     def __init__(self):
@@ -41,9 +47,10 @@ class Meta(Plugin):
         self.reflection=ReflectionHelper()
         self.params={}
         self.loggers=[]
-        self.lastConversion=None
+        self.last=None
         self.reduction=None
-
+        self.converters={}
+        
     def addLogger(self,whaleLogger):
         self.loggers.append(whaleLogger)
 
@@ -53,7 +60,7 @@ class Meta(Plugin):
         
     def addPlugin(self,obj):
         try:
-            print "Adding %s"%obj
+            print "Adding %s"%obj.getName()
             self.reflection.addObj(obj)
         except e:
             None
@@ -70,21 +77,31 @@ class Meta(Plugin):
         return method.split("2")[1]    
         
     def types(self):
-        return list(set([self.source(conv) for conv in self.converters()]+[self.target(conv) for conv in self.converters()]))                        
+        return list(set([self.source(conv) for conv in self._converters()]+[self.target(conv) for conv in self._converters()]))                        
 
     def getGraph(self):
         dg=digraph()
         for t in self.types(): dg.add_node(t)
-        for c in self.converters():
+        for c in self._converters():
             classname=c[0].__class__.__name__
             source=self.source(c)
             target=self.target(c)
             if not dg.has_edge((source,target)):
                 dg.add_edge((source,target))
             dg.add_edge_attribute((source,target),("conv",c))
-        return dg
+        return dg    
+
+    def resetConverter(self,source,target):
+        converterName="%s2%s"%(source,target)
+        if converterName in self.converters: self.converters.pop(converterName)
     
-    def findConverter(self,source,target):
+    def findConverter(self,source,target,store=False):
+        ## return a converter from source to target
+        ## if more than a path is possible interacts
+        ## with the user to pick up one.
+        converterName="%s2%s"%(source,target)
+        if store and converterName in self.converters:
+            return self.converters[converterName]
         graph=self.getGraph()
         (map,_)=shortest_path(graph,source)
         convs=[]
@@ -101,21 +118,20 @@ class Meta(Plugin):
                 convs.append(tmp)
             curr=map[curr]
         convs.reverse()
+        for ind,c in enumerate(convs):
+            if type(c)==list:
+                index=-1
+                print("More than one converter found. Choose one between the following:")
+                for i in range(1,len(c)+1):
+                    print "%s) %s"%(i,self.singleConverterRep(c[i-1]))
+                while index<0 or index>len(c)-1:
+                    index=int(raw_input("Index: "))-1
+                convs[ind]=c[index]
+                print convs[i]
+        if store:
+            self.converters[converterName]=convs
         return convs
                      
-    def _findConverter(self,source,target,maxdepth=1):
-        for c in self.converters():
-            if self.canConvert(c,source,target):
-                return [c]
-        if maxdepth==1:
-            return None
-        for c in self.converters():
-            m1=self._findConverter(source,self.target(c),1)
-            m2=self._findConverter(self.target(c),target,maxdepth-1)
-            if m1 and m2:
-                return m1+m2
-        return None
-
     def singleConvert(self,converter,value=None,more=None):
         (obj,method)=converter
         params=inspect.getargspec(getattr(obj,method))[0]
@@ -137,14 +153,16 @@ class Meta(Plugin):
         else:
             return [x]
 
-
     def setDefault(self,value,param):
         self.params.update({value:param})
 
-    def generate(self,target,args={},generator=None):
+    def g(self,target,filter=None,args={},generator=None):
+        return self.generate(target,filter,args,generator)
+
+    def generate(self,target,like=None,args={},generator=None):
         generators=[]
         if not generator:
-            for g in self.generators():
+            for g in self._generators():
                 if target==self.target(g):
                     generators.append(g)
             if len(generators)==0:
@@ -160,53 +178,81 @@ class Meta(Plugin):
                     index=int(raw_input("Index: "))-1
                 generator=generators[index]
         (obj,method)=generator
-        return getattr(obj,method)(**args)
- 
-    def convert(self,source,target,value=None,more={},converters=None,duplicates=False):
-        self.lastConversion=[]
+        res=getattr(obj,method)(**args)
+        if like!=None:
+            return filter(lambda x:x.find(like)!=-1,res)
+        return res
+
+    def c(self,source,target,value=None,more={},converters=None,duplicates=False):
+        return self.convert(source,target,value,more,converters,duplicates)
+
+    def countedlist(self,alist):
+        '''Given a list returns a list of couples (elem, count) where
+        elem are elemnts of alist without duplicated and count is the
+        number of occurences of elem in alist'''
+        noduplicates=list(set(alist))
+        return [(x,alist.count(x)) for x in noduplicates]
+
+    def convert2(self,source,target,values=None,more={},converters=None):
+        ## "last" variable
+        ## to contain all the conversion steps
+        self.last=[]
         if not converters:
-            converters=self.findConverter(source,target)
+            converters=self.findConverter(source,target,True)
+        if not converters:
+            raise MetaException("Converter from %s to %s not found"%(source,target))
+        if type(values)!=list:
+            values=[values]
+        values=self.countedlist(values)
+
+        for converter in converters:
+            if type(converter)==list:
+                raise MetaException("Malformed list of converters found:%s"%converter)
+
+        prev=None
+        for converter in converters:
+            singlevals=list(set([val for (val,count) in values]))
+            dic={}
+            for val in singlevals:
+                dic[val]=self.singleConvert(converter,val,more)
+            self.last.append(dic)
+            
+        
+    def convert(self,source,target,value=None,more={},converters=None):
+        ## "last" variable
+        ## to contain all the conversion steps
+        self.last=[]
+        if not converters:
+            converters=self.findConverter(source,target,True)
         if not converters:
             raise MetaException("Converter from %s to %s not found"%(source,target))
         if type(value)!=list:
             value=[value]
-        vals=value
+        value=self.countedlist(value)
+
         for converter in converters:
             if type(converter)==list:
-                index=-1                
-                print("More than one converter found. Choose one between the following:")
-                for i in range(1,len(converter)+1):
-                    print "%s) %s"%(i,self.singleConverterRep(converter[i-1]))
-                while index<0 or index>len(converter)-1:
-                    index=int(raw_input("Index: "))-1
-                converter=converter[index]
+                raise MetaException("Malformed list of converters found:%s"%converter)
+
+        ## here the magic begins...
+        for converter in converters:
+            ## dictionary to be used in self.last to contain a conversion step
             dic={}
-            self.lastConversion.append(dic)
+            self.last.append(dic)
             tmp=[]
-            for val in value:
+            for (val,count) in value:
                 res=self.singleConvert(converter,val,more)
                 dic[val]=res
                 tmp.append(res)
+            ## we ensure tmp to be a list for the next step
             tmp=self.flatten(tmp)
-            value=tmp
-            if not duplicates:
-                value=list(set(tmp))
-##        self.lastConversion.append(value)
+#            value=tmp
+            value=self.countedlist(value)
+##            value=list(set(tmp))
         valstr=str(val)
         self.reduct={}
         midval=None
         midkey=None
-        if vals!=None:
-            for k in vals:
-                midval=k
-                for x in range(len(self.lastConversion)):
-                    midval=self.lastConversion[x][midval]
-                self.reduct[k]=midval
-            self.inv_map = {}
-            for k, v in self.reduct.iteritems():
-                self.inv_map[str(v)] = self.inv_map.get(str(v), [])
-                self.inv_map[str(v)].append(k)
-            self.reduct=self.inv_map
         
         logmessage="convert(%s,%s)=%s"%(source,target,str(value)[:30])
         self.log(logmessage)
@@ -221,18 +267,81 @@ class Meta(Plugin):
             return self.target(converter)==target
         return self.target(converter)==target and self.source(converter)==source
 
-    def generators(self):
-        return [(obj,method) for (obj,method) in self.reflection.publicMethods() if len(method.split("2"))==2 and self.source((obj,method))=='_' ]
+    def _generators(self, target=None):
+        return [(obj,method) for (obj,method) in self.reflection.publicMethods() if len(method.split("2"))==2 and self.source((obj,method))=='_' and (target==None or self.target((obj,method))==target)]
             
-    def converters(self):
-        return [(obj,method) for (obj,method) in self.reflection.publicMethods() if len(method.split("2"))==2 and self.source((obj,method))!='_' ]
+    def _converters(self,source=None,target=None):
+        return [(obj,method) for (obj,method) in self.reflection.publicMethods() if len(method.split("2"))==2 and self.source((obj,method))!='_' and (source==None or self.source((obj,method)) == source) and (target==None or self.target((obj,method)) == target)]
     
     def sources(self):
         return [(obj,method) for (obj,method) in self.reflection.publicMethods() if method.find("_2")==0 ]
+
+    def getSources(self):
+        sources=self.sources()
+        vals=list(set([b.split("2")[1] for (a,b) in sources]))
+        ret={}
+        for v in vals:
+            ret[v]=[ a.getName() for (a,b) in filter(lambda (x,y): v==y.split("2")[1], sources)]
+        return ret
+
+    def __plugins(self):
+        return self.reflection.objList()
+
+    def plugin(self,pluginName=""):
+        '''
+        This is a utility method to inspect plugins.
+        It accepts a string to match the plugins name.
+        If more than one match is obtained the list of all the plugins is printed.
+        If only one plugin is matched it prints the name and the list of its generators and converters.
+        '''
+        plugins=self.__plugins()
+        ## we first get the list of matching
+        plugin=filter(lambda x:x.getName().lower().find(pluginName.lower())!=-1,plugins)
+        exact=filter(lambda x:x.getName()==pluginName,plugins)
+        ## but if there's an exact match (case sensitive) we give it precedence
+        if len(exact)==1:
+            plugin=exact
+        if len(plugin)>1:
+            print ", ".join([x.getName() for x in plugin])
+            return
+        if len(plugin)==0:
+            print("No occurence found")
+            return
+        plugin=plugin[0]
+        generators=[method for (obj,method) in self._generators() if obj==plugin]
+        converters=[method for (obj,method) in self._converters() if obj==plugin]
+        print plugin.getName()
+        if len(generators)>0:
+            for g in generators:
+                print "*"+g.split("2")[1]
+        if len(converters)>0:
+            for c in converters:
+                print "->".join(c.split("2"))
+
+    def p(self,pluginName=""):
+        return self.plugin(pluginName)
+
+    def generators(self,target=None):
+        generators=list(set([method.split("2")[1] for (obj,method) in self._generators(target)]))
+        for g in generators:
+            all=self._generators(g)
+            print g+":"+", ".join([obj.getName() for (obj,method) in all])
+
+    def converters(self,source=None,target=None):
+        converters=list(set([method for (obj,method) in self._converters(source=source,target=target)]))
+        for c in converters:
+            all=self._converters(c.split("2")[0],c.split("2")[1])
+            print "->".join(c.split("2"))+": "+", ".join([obj.getName() for (obj,method) in all])
     
     def singleConverterRep(self,conv):
         (obj,method)=conv
-        return "%s.%s"%(obj.getDescription() or obj.__class__.__name__,method)
+        ret=""
+        if method.split("2")[0]=="_":
+            ret="*"+method.split("2")[1]
+        else:
+            ret="->".join(method.split("2"))
+        ret+="@"+obj.getName()
+        return ret
         
     def printConverter(self,converter):
         print "->".join([self.singleConverterRep(c) for c in converter])
@@ -241,7 +350,7 @@ class Meta(Plugin):
         g=Graph()
         for t in self.types():
             g.add_node(Node(t))
-        for conv in self.converters():
+        for conv in self._converters():
             source=self.source(conv)
             target=self.target(conv)
             g.add_edge(Edge(source,target,label=conv[0].__class__.__name__))

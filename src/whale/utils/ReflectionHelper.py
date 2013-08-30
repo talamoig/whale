@@ -22,6 +22,9 @@ class ReflectionHelper(object):
 
     def remObj(self,obj):
         self.objs.remove(obj)
+
+    def objList(self):
+        return self.objs
     
     def publicMethods(self):
         methods=[]
