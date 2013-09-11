@@ -46,8 +46,7 @@ class Tier2(Plugin):
         for host in hosts:
             self.Host2RemoveFromPuppet(host)
             self.Host2RemoveFromFunc(host)
-        
-
+    
     def Host2RemoveFromPuppet(self,Host):
         command=["/usr/sbin/puppetca","--clean", "%s"%Host]
         subprocess.call(command)
@@ -70,4 +69,7 @@ class Tier2(Plugin):
         for host in hosts:
             self.Host2Reboot(host)
             self.Host2RemoveFromFuncAndPuppet(host)
+            
+    def Host2YaimReconfig(self,Host):
+        return self.Host2Exec(Host,"rm -f /opt/glite/yaim/reconfig.log")
             
