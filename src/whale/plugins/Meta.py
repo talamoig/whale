@@ -50,6 +50,10 @@ class Meta(Plugin):
         self.last=None
         self.reduction=None
         self.converters={}
+        self.verbose=False
+
+    def setVerbose(self,verbose):
+        self.verbose=verbose
         
     def addLogger(self,whaleLogger):
         self.loggers.append(whaleLogger)
@@ -60,7 +64,7 @@ class Meta(Plugin):
         
     def addPlugin(self,obj):
         try:
-            print "Adding %s"%obj.getName()
+##            print "Adding %s"%obj.getName()
             self.reflection.addObj(obj)
         except e:
             None
@@ -247,7 +251,7 @@ class Meta(Plugin):
             ## we ensure tmp to be a list for the next step
             tmp=self.flatten(tmp)
 #            value=tmp
-            value=self.countedlist(value)
+            value=self.countedlist(tmp)
 ##            value=list(set(tmp))
         valstr=str(val)
         self.reduct={}
@@ -256,7 +260,8 @@ class Meta(Plugin):
         
         logmessage="convert(%s,%s)=%s"%(source,target,str(value)[:30])
         self.log(logmessage)
-        return value
+        return list(set(self.flatten(self.last[-1].values())))
+##        return list(set(self.flatten(self.last[-1].values())))
         
     def canConvert(self,converter,source=None,target=None):
         if source==None and target==None:

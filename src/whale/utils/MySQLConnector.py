@@ -3,11 +3,10 @@ Created on Jan 30, 2012
 
 @author: talamoig
 '''
-from whale.Stub import Stub
 
 import MySQLdb
 
-class MySQLConnector(Stub):
+class MySQLConnector(object):
     """A WHALE connector to MySQL DB backend"""
 
     def dbstart(self):

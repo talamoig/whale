@@ -33,7 +33,7 @@ def main():
                       help="set logging mode to verbose")
     (options, args) = parser.parse_args()
     readConfig(options.configfile)
-        
+
     if options.commands==None:
         sys.exit(1)
     if options.commands=="-":
