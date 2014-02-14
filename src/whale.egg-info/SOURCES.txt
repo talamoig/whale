@@ -1,7 +1,9 @@
 setup.py
 tools/__init__.py
+tools/lcgwhale-enc.py
 tools/lcgwhale.py
 whale/__init__.py
+whale/whaleinit.py
 whale.egg-info/PKG-INFO
 whale.egg-info/SOURCES.txt
 whale.egg-info/dependency_links.txt
@@ -11,6 +13,8 @@ whale/plugins/Meta.py
 whale/plugins/Plugin.py
 whale/plugins/__init__.py
 whale/plugins/assets/__init__.py
+whale/plugins/assets/glpi/GLPIInterface.py
+whale/plugins/assets/glpi/__init__.py
 whale/plugins/batchsystem/BatchSystem.py
 whale/plugins/batchsystem/__init__.py
 whale/plugins/batchsystem/lsf/LSF.py
@@ -26,6 +30,8 @@ whale/plugins/storagesystem/StorageSystem.py
 whale/plugins/storagesystem/__init__.py
 whale/plugins/storagesystem/dcache/DCache.py
 whale/plugins/storagesystem/dcache/__init__.py
+whale/plugins/system/System.py
+whale/plugins/system/__init__.py
 whale/plugins/tier2/Tier2.py
 whale/plugins/tier2/__init__.py
 whale/plugins/wlcg/GridMapDir.py

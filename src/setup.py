@@ -7,5 +7,5 @@ setup(name='whale',
       author_email='ivano.talamo@gmail.com',
       url='https://github.com/talamoig/whale',
       packages=find_packages(),
-      scripts=['tools/lcgwhale.py']
+      scripts=['tools/lcgwhale.py','tools/lcgwhale-enc.py']
       )

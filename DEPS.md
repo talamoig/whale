@@ -1,1 +1,1 @@
-https://github.com/mcphargus/python-glpi
+https://github.com/talamoig/python-glpi
