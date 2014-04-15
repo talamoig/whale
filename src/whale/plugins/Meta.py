@@ -50,10 +50,26 @@ class Meta(Plugin):
         self.last=None
         self.reduction=None
         self.converters={}
-        self.verbose=False
+        self.priority=True
+        self.setGlobalInfoProvider({})
+        self.cacheVals={}
 
-    def setVerbose(self,verbose):
-        self.verbose=verbose
+    def addToCacheVals(self,val,kind):
+        if not self.cacheVals.has_key(kind):
+            self.cacheVals[kind]=[]
+        self.cacheVals[kind].append(val)
+        self.cacheVals[kind]=list(set(self.cacheVals[kind]))
+
+    def getCachedVals(self,kind):
+        if not self.cacheVals.has_key(kind):
+            return []
+        return self.cacheVals[kind]
+        
+    def priority(self,val):
+        self.priority=val
+
+    def usePriority(self):
+        return self.priority
         
     def addLogger(self,whaleLogger):
         self.loggers.append(whaleLogger)
@@ -61,11 +77,12 @@ class Meta(Plugin):
     def log(self,message):
         for l in self.loggers:
             l.log(message)
-        
+
     def addPlugin(self,obj):
         try:
 ##            print "Adding %s"%obj.getName()
             self.reflection.addObj(obj)
+            obj.setGlobalInfoProvider(self.infoProvider)
         except e:
             None
 
@@ -125,31 +142,34 @@ class Meta(Plugin):
         for ind,c in enumerate(convs):
             if type(c)==list:
                 index=-1
+                if self.usePriority():
+                    c=sorted(c, key = lambda x : x[0].getPriority())
+                    c=[x for x in c if x[0].getPriority()==c[0][0].getPriority()]
+                    if len(c)==1:
+                        convs[ind]=c[0]
+                        continue                    
                 print("More than one converter found. Choose one between the following:")
                 for i in range(1,len(c)+1):
                     print "%s) %s"%(i,self.singleConverterRep(c[i-1]))
                 while index<0 or index>len(c)-1:
                     index=int(raw_input("Index: "))-1
                 convs[ind]=c[index]
-                print convs[i]
+#                print convs[i]
         if store:
             self.converters[converterName]=convs
         return convs
-                     
+
     def singleConvert(self,converter,value=None,more=None):
         (obj,method)=converter
         params=inspect.getargspec(getattr(obj,method))[0]
         all={}
-        all.update(self.params)
-        if more:
-            all.update(more)
+        for p in params:
+            if more.has_key(p):
+                all[p]=more[p]
         if value:
             all[params[1]]=value
-        for k in all.keys():
-            if not k in params:
-                del all[k]
-
         return getattr(obj,method)(**all)
+        
             
     def flatten(self,x):
         if isinstance(x, collections.Iterable) and not isinstance(x,str) and not isinstance(x,unicode):
@@ -173,16 +193,25 @@ class Meta(Plugin):
                 raise MetaException("No generator found for %s"%target)
             if len(generators)==1:
                 generator=generators[0]
+                print generators
             if len(generators)>1:
-                index=-1                
-                print("More than one generator found. Choose one between the following:")
-                for i in range(1,len(generators)+1):
-                    print "%s) %s"%(i,self.singleConverterRep(generators[i-1]))
-                while index<0 or index>len(generators)-1:
-                    index=int(raw_input("Index: "))-1
+                index=-1
+                if self.usePriority():
+                    generators=sorted(generators, key = lambda x : x[0].getPriority())
+                    generators=[x for x in generators if x[0].getPriority()==generators[0][0].getPriority()]
+                    if len(generators)==1:
+                        index=0
+                    else:
+                        print("More than one generator found. Choose one between the following:")
+                        for i in range(1,len(generators)+1):
+                            print "%s) %s"%(i,self.singleConverterRep(generators[i-1]))
+                        while index<0 or index>len(generators)-1:
+                            index=int(raw_input("Index: "))-1
                 generator=generators[index]
         (obj,method)=generator
         res=getattr(obj,method)(**args)
+        for val in res:
+            self.addToCacheVals(val,target)
         if like!=None:
             return filter(lambda x:x.find(like)!=-1,res)
         return res
@@ -192,11 +221,64 @@ class Meta(Plugin):
 
     def countedlist(self,alist):
         '''Given a list returns a list of couples (elem, count) where
-        elem are elemnts of alist without duplicated and count is the
+        elem are elements of alist without duplicated and count is the
         number of occurences of elem in alist'''
         noduplicates=list(set(alist))
         return [(x,alist.count(x)) for x in noduplicates]
+        
+    def convert3(self,source,target,value=None,more={},converters=None):
+        ## if converter is not provided we have to build it
+        if not converters:
+            converters=self.findConverter(source,target,True)
+        ## and if none is available we fail
+        if not converters:
+            raise MetaException("Converter from %s to %s not found"%(source,target))
+        ## we now have to build the "more" variable
+        ## and we fill it with user-defined variables
+        more=dict(self.getGlobalInfoProvider().items()+more.items())
+        ## after we will add values coming from intermediate steps
 
+        ## we now have to find out the first value (or list of values)
+        ## if no value is present BUT a good key is present we use it
+        if value==None and more.has_key(source):
+            value=more[source]
+
+        ## and make sure it is a list
+        if type(value)!=list:
+            value=[value]
+
+        ## and compress/convert to what we need (see countedlist doc fore more info)
+        value=self.countedlist(value)
+        self.last=[]
+        ## the magic begins...
+        ## for each conversion step        
+        addinfo={}
+        for converter in converters:
+            dic={}
+            self.last.append(dic)
+            tmp=[]
+            ## for every element to be converted
+            for (val,count) in value:
+                self.addToCacheVals(val,self.source(converter))
+                ## do the single conversion
+                res=self.singleConvert(converter,val,more)
+                if (type(res))==list:
+                    res.sort()
+                dic[val]=res
+                ## and accumulate stuff in the tmp variable
+                tmp.append(res)
+            tmp=self.flatten(tmp)
+            for t in tmp:
+                self.addToCacheVals(t,self.target(converter))
+            ## we prepare values for the next step
+            value=self.countedlist(tmp)
+        try:
+            return sum([int(x) for x in self.last[-1].values()])
+        except Exception:
+            pass
+        return list(set(self.flatten(self.last[-1].values())))
+            
+    
     def convert2(self,source,target,values=None,more={},converters=None):
         ## "last" variable
         ## to contain all the conversion steps
@@ -220,8 +302,7 @@ class Meta(Plugin):
             for val in singlevals:
                 dic[val]=self.singleConvert(converter,val,more)
             self.last.append(dic)
-            
-        
+                    
     def convert(self,source,target,value=None,more={},converters=None):
         ## "last" variable
         ## to contain all the conversion steps
@@ -230,14 +311,17 @@ class Meta(Plugin):
             converters=self.findConverter(source,target,True)
         if not converters:
             raise MetaException("Converter from %s to %s not found"%(source,target))
+        more=dict(self.getGlobalInfoProvider().items()+more.items())
+        if value==None and more.has_key(source):
+            value=more[source]
         if type(value)!=list:
             value=[value]
         value=self.countedlist(value)
-
+        
         for converter in converters:
             if type(converter)==list:
                 raise MetaException("Malformed list of converters found:%s"%converter)
-
+            
         ## here the magic begins...
         for converter in converters:
             ## dictionary to be used in self.last to contain a conversion step

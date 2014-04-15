@@ -22,13 +22,50 @@ class Plugin(object):
     descr=None
     name=None
     descr=None
-
+    infoProvider=None
+    prio=0
+    
     def setName(self,name):
         '''
         Function to set a shortname to recall this plugin
         '''
         self.name=name
 
+    def getPriority(self):
+        return self.prio
+
+    def setPriority(self,prio):
+        self.prio=prio
+
+    def globalInfo(self,info):
+        try:
+            return self.infoProvider[info]
+        except Exception:
+            return None
+
+    def unsetGlobalInfo(self,info):
+        try:
+            self.infoProvider.pop(info)
+        except Exception:
+            pass
+        
+    def setGlobalInfo(self,info,value):
+        try:
+            self.infoProvider[info]=value
+        except Exception:
+            pass
+    def getGlobalInfoProvider(self):
+        return self.infoProvider
+    
+    def setGlobalInfoProvider(self,provider):
+        self.infoProvider=provider
+
+    def verbose(self):
+        try:
+            return self.globalInfo("verbose").lower()=="true"
+        except Exception:
+            return False
+    
     def getName(self):
         if self.name==None:
             return self.__class__.__name__
@@ -51,11 +88,11 @@ class Plugin(object):
         return self.descr
         
 
-    def getItem(self,item):
+    def getItem(self,item,default=None):
         '''
         Returns the value of the current item in the config file
         '''
-        return self.configurable.getItem(item)
+        return self.configurable.getItem(item,default)
 
     def getItems(self):
         '''
@@ -81,7 +118,13 @@ class Plugin(object):
         name=self.getItem("name")
         if name!=None:
             self.setName(name)
-        
+        else:
+            if section!=None:
+                self.setName(section)
+        prio=self.getItem("prio")
+        if prio!=None:
+            self.setPriority(prio)
+            
 #    def flatten(self,x):
 #        if isinstance(x, collections.Iterable):
 #            return [a for i in x for a in self.flatten(i)]

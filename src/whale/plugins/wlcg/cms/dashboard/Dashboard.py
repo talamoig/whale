@@ -60,7 +60,7 @@ class Dashboard(BatchSystem):
     def JobId2RunningNode(self,jobId):
         return self.dashjobs[jobId]['WNHostName']
 
-    def JobId2JobStatus(jobId):
+    def JobId2JobStatus(self,jobId):
         return self.dashjobs[jobId]['gridStatusName']
     
     def __init__(self,configfile=None):

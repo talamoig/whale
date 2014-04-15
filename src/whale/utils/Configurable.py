@@ -12,11 +12,11 @@ class Configurable(object):
     See http://docs.python.org/2/library/configparser.html
     '''
 
-    def getItem(self,item):
+    def getItem(self,item,default=None):
         try:
             return self.__configParser.get(self.__section,item)
         except ConfigParser.NoOptionError:
-            return None            
+            return default
         except ConfigParser.NoSectionError as e:
             print "No section %s found in file %s"%(self.__section,self.__configFile)
             raise e
@@ -44,5 +44,3 @@ class Configurable(object):
         files=self.__configParser.read(configFile)
         if len(files)==0:
             raise ConfigParser.NoSectionError("No section %s found on file %s"%(section,configFile))
-
-        

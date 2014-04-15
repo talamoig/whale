@@ -33,12 +33,15 @@ class DCache(Plugin):
         except Exception:
             return None
 
-    def PoolInfo(self,Pool,Info):
+    def PoolInfo(self,Pool,Info=None):
         res=self.adminCommand(["cd %s"%Pool,"info"])
+        if Info==None:
+            return "\n".join(res)
         ret=filter(lambda x: x.find(Info)!=-1,res)
-        if len(ret)==1:
+        try:
             return ret[0].split(":")[1].split()[0]
-        return None
+        except Exception:
+            return ret
         
     def Pool2FreeSpace(self,Pool):
         return self.PoolInfo(Pool,"Free")
@@ -198,7 +201,8 @@ class DCache(Plugin):
         pass
     
     def __chimeraBasicQuery(self,query):
-        ##print query
+        if self.verbose():
+            print "query%s"%query
         return self.__basicQuery(self.__chimeradb,query)
     
     def __chimeraQuery(self,table,fields,append=""):

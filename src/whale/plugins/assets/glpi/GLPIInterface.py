@@ -14,15 +14,34 @@ class GLPIInterface(Plugin):
     def Host2ProductionStatus(self,Host):
         return None
     
-    def _2Host(self,Host):
-        return [x['name'] for x in self.glpi.list_computers(count=[0,10000])]
+    def _2Host(self):
+        return [x['name'].encode('ascii', 'ignore') for x in self.glpi.list_computers(count=[0,10000])]
+
+    def Host2ComputerModel(self,Host):
+        hosts=self.glpi.list_computers(count=[0,10000])
+        res=filter(lambda x:x['name']==Host,hosts)
+        if res==[]:
+            return None
+        try:
+            id=res[0]['id']
+            model_id=str(self.glpi.get_computer(res[0]['id'])['computermodels_id'])
+            model=str(self.glpi.get_object(itemtype="ComputerModel",_id=model_id)['name'])
+            return model
+        except Exception:
+            return None
+
 
     def Host2MacAddress(self,Host):
         hosts=self.glpi.list_computers(count=[0,10000])
         res=filter(lambda x:x['name']==Host,hosts)
         if res==[]:
             return None
-        return str(self.glpi.get_network_ports(res[0]['id'],itemtype='computer').values()[0]['mac'])
+        try:
+            return str(self.glpi.get_network_ports(res[0]['id'],itemtype='computer').values()[0]['mac'])
+        except Exception:
+            return None
+    
+    
         
     def __init__(self,configfile):
         self.config(configfile)

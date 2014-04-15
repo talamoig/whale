@@ -43,6 +43,67 @@ activities at a given site. For this reason it also provides a
 tailored plugin to perform advanced searches in the activity log.
 
 
+Use cases
+=========
+
+lcgwhale.py is a shell-like tool, with special features that address
+typical CMS Tier-2 administrator needs.
+
+
+# getting the status (up/down) of a host
+Host cmsrm-cream02 Status
+
+# generate a list of Hosts
+
+Host
+
+# filter it
+
+Host cmsrm-cream
+
+# get the status of a set of hosts obtained from a generator
+
+Host cmsrm-cream | Host Status
+
+# list of datasets at a site
+
+PhedexNode T2_IT_Rome Dataset
+
+#Logical Filenames in a dataset
+
+Dataset /sdfs/sdsd#sdsdv/fg Lfn
+
+
+# list of all pools
+
+Pool
+
+# Physical Filenames of files on pool cmsrm-st14_1
+
+Pool cmsrm-st14_1 Pfn
+
+# list of hosts hosting a given file
+
+Pfn /pnfs/roma1.infn.it/data/cms/store/user/talamoig/test12829 Host
+
+# close a host in lsf
+
+Host cmsrm-wn123 CloseHost
+
+# close hosts where LSF service is in critical state
+
+Status LSF,critical Host | Host CloseHost
+
+# close hosts where user cms014 are running
+
+User cms014 Jobs | Jobs CloseHost
+
+# get the output of a command on a given host
+
+Host cmsrm-cream01,uptime SSHCommand
+
+Host cmsrm-wn|
+
 Usage
 ======
 

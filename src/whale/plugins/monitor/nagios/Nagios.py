@@ -19,20 +19,23 @@ class Nagios(Plugin):
 
     hostLastCeckIndex=16
     hostStatusIndex=69
-    hostStatusPattern="<TR><TD CLASS='dataVar'>Host Status:</td><td CLASS='dataVal'><DIV CLASS='.*'>&nbsp;&nbsp;(.*)&nbsp;&nbsp;</DIV>&nbsp;\((.*)\)</td></tr>\n"
+    hostStatusPattern="<TR><TD CLASS='dataVar'>Host Status:</td><td CLASS='dataVal'><DIV CLASS='.*'>&nbsp;&nbsp;(.*)&nbsp;&nbsp;</DIV>&nbsp;\((.*)\)</td></tr>"
     serviceStatusIndex=74
     serviceStatusPattern="<TR><TD CLASS='dataVar'>Current Status:</TD><TD CLASS='dataVal'><DIV CLASS='.*'>&nbsp;&nbsp;(.*)&nbsp;&nbsp;</DIV>&nbsp;\((.*)\)</TD></TR>"
     serviceAtHostPattern="<TD ALIGN=LEFT valign=center CLASS='.*'><A HREF='.*'>(.*)</A></TD></TR>"
     hostInHostGroupPattern="<TD CLASS='.*'><A HREF='status.cgi\?host=.*&style=detail' title='.*'>(.*)</A></TD>"
 
 
+    def resetCache(self):
+        self.cachetime=time.time()-int(self.getItem("cachetime"))
+        
     def __init__(self,configfile,section=None):
         self.config(configfile,section)
         '''
         Constructor
         '''
         self.allinfo=None
-        self.cachetime=time.time()-int(self.getItem("cachetime"))
+        self.resetCache()
     
     def __urlContentHTTPBasicAuth(self,url):
         auth_handler = urllib2.HTTPBasicAuthHandler()
@@ -46,44 +49,39 @@ class Nagios(Plugin):
         return opener.open(url)
 
     def urlContent(self,path):
-        url="%s%s/%s"%(self.getItem("server"),self.getItem("path"),urllib.quote(path,"?/&="))
+        cgipath=self.getItem("path","/nagios/cgi-bin/")
+        url="%s%s/%s"%(self.getItem("server"),cgipath,urllib.quote(path,"?/&=+"))
+        if self.verbose():
+            print "Url:%s"%url
         if self.getItem("auth")=="basic":
             return self.__urlContentHTTPBasicAuth(url)
         if self.getItem("auth")=="cert":
             return self.__urlContentCertAuth(url)
         return None
 
-    hostLinePattern="<TD align=left valign=center CLASS='.*'><A HREF='extinfo.cgi\?type=1&host=(.*)' title='.*'>.*</A></TD>"
-    serviceLinePattern="<TD ALIGN=LEFT valign=center CLASS='.*'><A HREF='extinfo.cgi\?type=2&host=.*&service=.*'>(.*)</A></TD></TR>"
-    serviceStatusLinePattern="^<TD CLASS='.*'.*>(.*)</TD>$"
+    infoLinePattern="<td align=[']{0,1}left[']{0,1} valign=center class='(.*)'><a href='extinfo.cgi.type=2&host=(.*)&service=.*'>(.*)</a></td></tr>"
     
+    allInfoPage="status.cgi?host=all&limit=0&start=0&limit=100000"
+
     def getAllInfo(self):
         if time.time()-self.cachetime<int(self.getItem("cachetime")):
             return self.allinfo
         self.cachetime=time.time()
         self.allinfo={}
-        lines=self.urlContent("status.cgi?host=all")
-        hostPatt=re.compile(self.hostLinePattern)
-        servicePatt=re.compile(self.serviceLinePattern)
-        serviceStatusPatt=re.compile(self.serviceStatusLinePattern)
+        lines=self.urlContent(self.allInfoPage)
+        infoPatt=re.compile(self.infoLinePattern,re.IGNORECASE)
         host=None
         service=None
         status=None
         for l in lines:
-            m=hostPatt.match(l)
+            m=infoPatt.match(l)
             if m:
-                host=m.group(1)
-                self.allinfo[host]={}
-            m=servicePatt.match(l)
-            if host and m:
-                service=m.group(1)
-                status=[]
-            m=serviceStatusPatt.match(l)
-            if service and m:
-                statusinfo=m.group(1)
-                self.allinfo[host][service]=statusinfo
-                status=None
-                service=None
+                status=m.group(1)
+                host=m.group(2)
+                service=m.group(3)
+                if not self.allinfo.has_key(host):
+                    self.allinfo[host]={}
+                self.allinfo[host][service]=status
         if self.getItem("hostfilter"):
             filter=self.getItem("hostfilter")
             for k in self.allinfo.keys():
@@ -149,7 +147,7 @@ class Nagios(Plugin):
     def Hostgroup2Host(self,Hostgroup):
         lines=self.urlContent("status.cgi?hostgroup=%s&style=overview"%(Hostgroup)).read().split("\n")
         hosts=[]
-        pattern=re.compile(self.hostInHostGroupPattern)
+        pattern=re.compile(self.hostInHostGroupPattern,re.IGNORECASE)
         for l in lines:
             match=pattern.match(l)
             if match:
@@ -159,28 +157,28 @@ class Nagios(Plugin):
 
     def infoFromUrl(self,path,linenum,pattern,index):
         lines=self.urlContent(path).read().split("\n")        
-        patt=re.compile(pattern)
+        patt=re.compile(pattern,re.IGNORECASE)
         match=patt.match(lines[linenum])
+        if not match:
+            return None
         return match.group(index)
 
-    def _2Host(self,host=None,service=None,inStatus=None,outStatus=None):
-        return self.query(host,service,inStatus,outStatus).keys()
+    def _2Host(self,Host=None,Service=None,inStatus=None,outStatus=None):
+        return self.query(Host,Service,inStatus,outStatus).keys()
 
-    def _2NagiosService(self,host=None,service=None,inStatus=None,outStatus=None):
-        res=self.query(host,service,inStatus,outStatus)
-        return list(set([k for s in res.values() for k in s.keys()]))
-    
-##        return list(set(["%s@%s"%(k,s) for s in res.keys() for k in res[s].keys()]))      
-##        return list(set([k for s in self.getAllInfo().values() for k in s.keys()]))
+    def _2Service(self,Host=None,Service=None,inStatus=None,outStatus=None):
+        res=self.query(Host,Service,inStatus,outStatus)
+        return list(set([k for s in res.values() for k in s.keys()]))    
         
-    def hostStatus(self,host):
-        return self.infoFromUrl("type=1&host=%s"%host,self.hostStatusIndex,self.hostStatusPattern,1)
+    def Host2Status(self,Host):
+        return self.infoFromUrl("/extinfo.cgi?type=1&host=%s"%Host,self.hostStatusIndex,self.hostStatusPattern,1)
 
-    def serviceStatus(self,host,service):
-        return self.infoFromUrl("extinfo.cgi?type=2&host=%s&service=%s"%(host,service),self.serviceStatusIndex,self.serviceStatusPattern,1)
+    def Service2Status(self,Service,Host):
+        Service.replace(" ","+")
+        return self.infoFromUrl("extinfo.cgi?type=2&host=%s&service=%s"%(Host,Service),self.serviceStatusIndex,self.serviceStatusPattern,1)
+    
+    def Service2Host(self,Service):
+        return [host for host,services in self.getAllInfo().items() if Service in services]
 
-    def NagiosService2Host(self,service):
-        return [host for host,services in self.getAllInfo().items() if service in services]
-
-    def Host2NagiosService(self,host):
-        return self.getAllInfo()[host].keys()
+    def Host2Service(self,Host):
+        return self.getAllInfo()[Host].keys()

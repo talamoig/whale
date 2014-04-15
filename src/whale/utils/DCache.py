@@ -44,7 +44,7 @@ class AdminDoor(object):
             cmds += '\n..\nlogoff\n'
         
         sshcmd = ['/usr/bin/ssh','-q','-T','-p',self.__port,'-c',self.__cypher,'-l',self.__login,self.__host]
-        print " ".join(sshcmd)
+##        print " ".join(sshcmd)
         sshproc=subprocess.Popen(sshcmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=None)
         sshproc.stdin.write(cmds)
         ##ret=sshproc.communicate(cmds)
