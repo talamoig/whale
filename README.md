@@ -50,10 +50,10 @@ lcgwhale.py is a shell-like tool, with special features that address
 typical CMS Tier-2 administrator needs.
 
 
-### getting the status (up/down) of a host
+#### getting the status (up/down) of a host
 Host cmsrm-cream02 Status
 
-### generate a list of Hosts
+#### generate a list of Hosts
 
 Host
 
