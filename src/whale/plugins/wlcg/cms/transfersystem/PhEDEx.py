@@ -116,10 +116,16 @@ class PhEDEx(Plugin):
             None    
      
      
-    def PhedexNode2TransferRequest(self,PhedexNode,approval="approved"):
+    def PhedexNode2TransferRequest(self,PhedexNode,approved=True):
+        '''
+        eg. http://cmsweb.cern.ch/phedex/datasvc/json/prod/requestlist?node=T2_IT_Rome
+        '''
         requests=self.basicQuery("requestlist",{"node":PhedexNode})['request']
-        requests=map()
-        return [r["id"] for r in requests]
+        if approved: 
+            appr='approved' 
+        else: 
+            appr='disapproved'
+        return [ str(x['id']) for x in requests if x['node'][0]['decision'] == appr ]
 
     def Dataset2TransferRequest(self,dataset,PhedexNode=None):
         res=self.basicQuery("requestlist",{"dataset":dataset})
