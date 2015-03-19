@@ -54,11 +54,17 @@ class Plugin(object):
             self.infoProvider[info]=value
         except Exception:
             pass
+
     def getGlobalInfoProvider(self):
         return self.infoProvider
     
-    def setGlobalInfoProvider(self,provider):
-        self.infoProvider=provider
+    def setGlobalInfoProvider(self,infoProvider):
+        '''
+        An infoProvider is basically a dictionary shared between whale plugins
+        where global informations can be read/written.
+        It can be thought as a global namespace.
+        '''
+        self.infoProvider=infoProvider
 
     def verbose(self):
         try:
@@ -125,10 +131,5 @@ class Plugin(object):
         if prio!=None:
             self.setPriority(prio)
             
-#    def flatten(self,x):
-#        if isinstance(x, collections.Iterable):
-#            return [a for i in x for a in self.flatten(i)]
-#        else:
-#            return [x]
   
                 
