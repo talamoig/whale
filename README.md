@@ -3,10 +3,10 @@
 ## Quickstart installation
 To install:
 
-   git clone https://github.com/talamoig/whale
-   cd whale/src
-   sudo python setup.py install
-   python
+    git clone https://github.com/talamoig/whale
+    cd whale/src
+    sudo python setup.py install
+    python
 
 And then on the Python prompt:
     
