@@ -21,6 +21,7 @@ You can get the IDs of all the not approved transfers at a site:
     #['24352', '394170', '64500', '157225', '367808', '310606', ...
 
 And know the dataset they corresponds. For the first, for example:
+
     phedex.TransferRequest2Dataset('24352')
     #[u'/CSA07Electron/CMSSW_1_6_7-CSA07-Chowder-I1-PDElectron-Skim ...
 
@@ -34,7 +35,7 @@ And know the dataset they corresponds. For the first, for example:
 	 whale.types()
 	 #['TransferRequest', 'StorageElement', 'Checksum', 'Lfn', 'Dataset', 'PhysicGroup', 'Adler', 'CMSSite', 'PhedexNode', 'Pfn', 'Datablock', 'Size']
 	 
-With this plugin we can use the more general `convert` function:
+With the Meta plugin we can use the more general `convert` function:
 
      datasets=whale.convert('PhedexNode','Dataset',"T2_IT_Rome")
      len(datasets)
@@ -51,10 +52,8 @@ We can get the list of files (accessible via SRM):
 
 Or accessible in direct mode:
 
-   whale.convert("Dataset","Pfn",datasets[0],more={'PhedexNode':"T2_IT_Rome",'protocol':'direct'})
-   #[u'/pnfs/roma1.infn.it/data/cms/store/mc/Summer12_DR53X/TTToHplusBWB_csbar_M-155_8TeV-pythia6-tauola/AODSIM/PU_S10_START53_V7C-v1/20000/B445BA38-796A-E211-B306-002590747DDC.root', u'/pnfs/roma1.infn.it/data/cms/store/mc/Summer12_DR53X/TTToHplusBWB_csbar_M-155_8TeV-pythia6-tauola/AODSIM/PU_S10_START53_V7C-v1/20000/2C8A
-   # continues...
-
+     whale.convert("Dataset","Pfn",datasets[0],more={'PhedexNode':"T2_IT_Rome",'protocol':'direct'})
+     #[u'/pnfs/roma1.infn.it/data/cms/store/mc/Summer12...
 
 
 Introduction
